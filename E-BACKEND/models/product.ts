@@ -2,15 +2,14 @@ import { DataTypes, Model } from 'sequelize';
 import type { Optional } from 'sequelize';
 import { sequelize } from '../config/database.ts';
 
-// Define fixed categories
+// Define fixed categories to match frontend options
 export const ProductCategory = {
-    ELECTRONICS: 'Electronics',
-    CLOTHING: 'Clothing',
-    FOOTWEAR: 'Footwear',
-    HOME_APPLIANCES: 'Home and Kitchen',
-    BEAUTY: 'Beauty and Personal Care',
-    GROCERIES: 'Groceries',
-    OTHER: 'Other',
+    HAIR_EXTENSIONS: 'Hair Extensions',
+    HAIR_TOOLS: 'Hair Tools',
+    ACCESSORIES: 'Accessories',
+    WIGS: 'Wigs',
+    OILS: 'Oils',
+    MORE: 'More',
 } as const;
 
 export type ProductCategory = typeof ProductCategory[keyof typeof ProductCategory];
@@ -22,7 +21,7 @@ export interface ProductAttributes {
     price: number;
     stock: number;
     category: ProductCategory;
-    images?: string[] | null; // <--- Changed from imageUrl to an array of strings
+    images?: string[] | null;
     sellerId: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -37,7 +36,7 @@ export class Product extends Model<ProductAttributes, ProductCreationAttributes>
     public declare price: number;
     public declare stock: number;
     public declare category: ProductCategory;
-    public declare images: string[] | null; // <--- Updated property type
+    public declare images: string[] | null;
     public declare sellerId: string;
 
     public declare readonly createdAt: Date;
@@ -74,10 +73,10 @@ Product.init(
         category: {
             type: DataTypes.ENUM(...Object.values(ProductCategory)),
             allowNull: false,
-            defaultValue: ProductCategory.OTHER,
+            defaultValue: ProductCategory.HAIR_EXTENSIONS,
         },
         images: {
-            type: DataTypes.JSON, // <--- JSON allows storing arrays cleanly in SQLite, Postgres, and MySQL
+            type: DataTypes.JSON,
             allowNull: true,
             defaultValue: [],
             field: 'images',

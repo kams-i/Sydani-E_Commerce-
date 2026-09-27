@@ -1,6 +1,23 @@
+"use client";
+
 import { User, ShoppingCart, Globe, Search } from "lucide-react";
 
-export default function Navbar() {
+interface NavbarProps {
+  activeCategory: string;
+  onSelectCategory: (category: string) => void;
+}
+
+export default function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
+  const categories = [
+    "All Categories",
+    "Hair Extensions",
+    "Hair Tools",
+    "Accessories",
+    "Wigs",
+    "Oils",
+    "More",
+  ];
+
   return (
     <nav className="w-full bg-[#5A3A33] border-b-2 border-[#5C3A31]/30 px-6 pt-4 pb-3 shadow-sm text-white">
       <div className="max-w-7xl mx-auto flex flex-col gap-4">
@@ -34,13 +51,17 @@ export default function Navbar() {
 
           {/* Right Side: Lucide Icons (User, Cart, Globe) */}
           <div className="flex items-center gap-5 shrink-0 text-white">
-            <button aria-label="User Profile" className="hover:text-[#D2CFC6] transition-colors">
+            <button aria-label="User Profile" className="hover:text-[#D2CFC6] transition-colors cursor-pointer">
               <User className="w-5 h-5" />
             </button>
-            <button aria-label="Shopping Cart" className="hover:text-[#D2CFC6] transition-colors">
+            <button 
+              aria-label="Shopping Cart" 
+              onClick={() => window.location.href = "/cart"}
+              className="hover:text-[#D2CFC6] transition-colors cursor-pointer"
+            >
               <ShoppingCart className="w-5 h-5" />
             </button>
-            <button aria-label="Change Language or Region" className="hover:text-[#D2CFC6] transition-colors">
+            <button aria-label="Change Language or Region" className="hover:text-[#D2CFC6] transition-colors cursor-pointer">
               <Globe className="w-5 h-5" />
             </button>
           </div>
@@ -49,13 +70,22 @@ export default function Navbar() {
 
         {/* Bottom Row: Categories Spread Evenly */}
         <div className="flex items-center justify-between text-xs sm:text-sm font-medium text-white/90 pt-1 border-t border-white/10 overflow-x-auto whitespace-nowrap gap-4 scrollbar-none">
-          <a href="#" className="hover:text-white transition-colors">All Categories</a>
-          <a href="#" className="hover:text-white transition-colors">Hair Extensions</a>
-          <a href="#" className="hover:text-white transition-colors">Hair Tools</a>
-          <a href="#" className="hover:text-white transition-colors">Accessories</a>
-          <a href="#" className="hover:text-white transition-colors">Wigs</a>
-          <a href="#" className="hover:text-white transition-colors">Oils</a>
-          <a href="#" className="hover:text-white transition-colors">More</a>
+          {categories.map((category) => {
+            const isActive = activeCategory === category;
+            return (
+              <button
+                key={category}
+                onClick={() => onSelectCategory(category)}
+                className={`transition-colors pb-1 border-b-2 cursor-pointer ${
+                  isActive
+                    ? "text-white border-white font-semibold"
+                    : "text-white/80 border-transparent hover:text-white"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
         </div>
 
       </div>

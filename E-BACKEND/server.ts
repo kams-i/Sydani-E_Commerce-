@@ -18,7 +18,11 @@ const port = process.env.PORT || 9000;
 app.use(express.json());
 app.use(logger);
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://localhost:3000'],
+    origin: [
+        'http://localhost:3000', 
+        'https://localhost:3000', 
+        'https://sydani-e-commerce.vercel.app'
+    ],
     credentials: true
 }));
 
@@ -31,7 +35,6 @@ app.use('/api/v6/user', userRoute);
 app.use('/api/v6/product', productRoute);
 app.use('/api/v6/cart', cartRoute);
 app.use('/api/v6/order', orderRoute);
-// app.use('/api/v5', analyticsRoute); // Mounted at /api/v1 to match PRD base convention
 
 // 2. Fallback & Error Handlers MUST go LAST (after all valid routes)
 app.use(notFound);

@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Package, CheckCircle2, Clock, Truck, MapPin, CreditCard } from "lucide-react";
+import { X, Package, CheckCircle2, Clock, MapPin, CreditCard } from "lucide-react";
 
 export interface OrderItem {
     title: string;
@@ -17,6 +17,8 @@ export interface Order {
     itemsCount: number;
     deliveryAddress: string;
     paymentMethod?: string;
+    paymentType?: string;    // Added alternative key
+    payment_method?: string; // Added alternative key
     items: OrderItem[];
 }
 
@@ -29,23 +31,43 @@ interface OrderModalProps {
 export default function OrderDetailsModal({ order, isOpen, onClose }: OrderModalProps) {
     if (!isOpen || !order) return null;
 
+    // Helper to format payment method keys into friendly display text
+    const formatPaymentMethod = (method?: string) => {
+        if (!method || method.trim() === "") return "Not specified";
+
+        switch (method.toLowerCase()) {
+            case "card":
+            case "debit card":
+            case "credit_card":
+                return "Card";
+            case "wallet":
+                return "Wallet Balance";
+            case "transfer":
+            case "bank_transfer":
+            case "bank transfer":
+                return "Bank Transfer";
+            default:
+                return method.charAt(0).toUpperCase() + method.slice(1);
+        }
+    };
+
     return (
-        <div 
+        <div
             onClick={onClose}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200"
         >
-            <div 
-                onClick={(e) => e.stopPropagation()} 
+            <div
+                onClick={(e) => e.stopPropagation()}
                 className="bg-[#FDF6F0] border-2 border-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl flex flex-col p-6 sm:p-8 gap-6"
             >
-                
+
                 {/* Modal Header */}
                 <div className="flex items-center justify-between border-b border-zinc-300/40 pb-4">
                     <div className="flex items-center gap-2 text-[#5A3A33]">
                         <Package className="w-6 h-6" />
                         <h2 className="text-lg sm:text-xl font-bold font-serif">Order Details</h2>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="w-8 h-8 rounded-full bg-[#F4E3D7] border border-white flex items-center justify-center text-[#5A3A33] hover:bg-[#ebd5c5] transition-colors cursor-pointer"
                         aria-label="Close modal"
@@ -62,11 +84,10 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderModal
                         <span className="text-xs text-zinc-500 block mt-0.5">{order.date}</span>
                     </div>
                     <div className="flex flex-col sm:items-end gap-1">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                            order.status === "Delivered" 
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${order.status === "Delivered"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                 : "bg-amber-100 text-amber-800 border border-amber-200"
-                        }`}>
+                            }`}>
                             {order.status === "Delivered" ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
                             {order.status}
                         </span>
@@ -75,7 +96,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderModal
 
                 {/* Items List */}
                 <div className="flex flex-col gap-3">
-                    <h3 className="text-sm font-bold text-[#5A3A33] uppercase tracking-wider text-xs">
+                    <h3 className="text-xs font-bold text-[#5A3A33] uppercase tracking-wider">
                         Ordered Items ({order.itemsCount})
                     </h3>
                     <div className="flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
@@ -115,7 +136,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderModal
                         <CreditCard className="w-4 h-4 text-[#5A3A33] shrink-0" />
                         <div>
                             <span className="font-semibold text-zinc-900">Payment: </span>
-                            <span className="text-zinc-600">{order.paymentMethod || "Card ending in ••••"}</span>
+                            <span className="text-zinc-600">{formatPaymentMethod(order.paymentMethod)}</span>
                         </div>
                     </div>
                 </div>

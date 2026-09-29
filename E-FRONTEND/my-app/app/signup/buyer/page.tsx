@@ -9,8 +9,11 @@ export default function Home() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
+    phone: '', // Added phone here
     password: '',
+    role: 'buyer',
   });
 
   const [loading, setLoading] = useState(false);
@@ -31,36 +34,19 @@ export default function Home() {
     setSuccessMessage('');
 
     try {
-      const response = await userAPI.signIn(formData);
-      const body = response.data;
-      const payload = body?.data ?? body;
+      const response = await userAPI.signUp(formData);
+      setSuccessMessage('Account created successfully!');
 
-      const token =
-        payload?.accessToken ??
-        payload?.token ??
-        payload?.tokens?.accessToken ??
-        payload?.tokens?.token;
-
-      if (!token) {
-        console.error('Sign-in succeeded but no token found. Response body:', body);
-        setErrorMessage('Signed in, but no auth token was returned. Check the console.');
-        return;
+      if (response.data?.token) {
+        localStorage.setItem('token', response.data.token);
       }
 
-      localStorage.setItem('token', token);
-
-      const refresh = payload?.refreshToken ?? payload?.tokens?.refreshToken;
-      if (refresh) localStorage.setItem('refreshToken', refresh);
-
-      setSuccessMessage('Logged in successfully!');
-
       setTimeout(() => {
-        router.push('/dashboard');
-      }, 1200);
-
+        router.push('/login');
+      }, 1500);
     } catch (error: any) {
       setErrorMessage(
-        error.response?.data?.message || 'Invalid email or password. Please try again.'
+        error.response?.data?.message || 'Failed to create account. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -82,20 +68,20 @@ export default function Home() {
         </div>
 
         <div className="hidden sm:flex items-center gap-2 text-sm text-zinc-700">
-          <p>Don't have an account?</p>
-          <Link href="/signup/buyer" className="text-white px-3 py-1.5 text-xs rounded-lg bg-[#5C3A31] font-semibold hover:bg-[#744b41] transition-colors">
-            Sign up
-          </Link>
+          <p>Already have an account?</p>
+          <button className="text-white px-3 py-1.5 text-xs rounded-lg bg-[#5C3A31] font-semibold hover:bg-[#744b41] transition-colors">
+            Log in
+          </button>
         </div>
       </div>
 
-      {/* Transparent Login Container */}
+      {/* Transparent Sign Up Container */}
       <div className="relative z-10 w-full max-w-sm p-6 pt-24 sm:pt-28 rounded-2xl bg-transparent text-white">
         <h1 className="text-2xl font-bold tracking-tight text-left text-[#171717]">
-          Log in
+          Sign Up
         </h1>
         <p className="text-xs text-left text-zinc-300 mt-1 mb-4">
-          Welcome back! Please enter your details.
+          Join Hair Haven and get started today.
         </p>
 
         {errorMessage && (
@@ -110,6 +96,17 @@ export default function Home() {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+          <p className="text-xs font-medium text-zinc-200">Full Name</p>
+          <input
+            type="text"
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleChange}
+            placeholder="Enter your full name"
+            className="w-full px-3.5 py-2 text-sm rounded-lg bg-white/15 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white/50"
+            required
+          />
+
           <p className="text-xs font-medium text-zinc-200">Email</p>
           <input
             type="email"
@@ -121,45 +118,54 @@ export default function Home() {
             required
           />
 
+          <p className="text-xs font-medium text-zinc-200">Phone</p>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="+234 800 000 0000"
+            className="w-full px-3.5 py-2 text-sm rounded-lg bg-white/15 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white/50"
+            required
+          />
+
           <p className="text-xs font-medium text-zinc-200">Password</p>
           <input
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="At least 8 characters"
             className="w-full px-3.5 py-2 text-sm rounded-lg bg-white/15 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white/50"
             required
           />
 
-          <div className="flex items-center justify-between text-xs text-zinc-300">
-            <div className="flex items-center gap-2">
-              <input type="checkbox" name="remember" id="remember" className="accent-zinc-500" />
-              <label htmlFor="remember">Remember for 30 days</label>
-            </div>
-            <Link href="/forgot-password" className="hover:underline text-zinc-200">Forgot Password?</Link>
-          </div>
+          <input type="hidden" name="role" value="buyer" />
 
-          <button
-            type="submit"
+          <button 
+            type="submit" 
             disabled={loading}
-            className="w-full py-2 mt-1 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50"
+            className="w-full py-2 mt-2 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
 
-          <button
-            type="button"
+          <button 
+            type="button" 
             className="w-full py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
           >
-            Sign In with Google
+            Sign up with Google
           </button>
 
-          <div className="flex gap-2 pt-3 justify-center text-xs text-zinc-300 border-t border-white/10 mt-1">
-            <p>Don't have an account?</p>
-            <Link href="/signup/buyer" className="text-black font-medium hover:underline">
-              Sign Up
+          <div className="pt-2 text-center">
+            <Link href="/signup/seller" className="text-xs text-zinc-200 hover:text-white font-medium underline">
+              Want to sell products? Become a seller
             </Link>
+          </div>
+
+          <div className="flex gap-2 pt-2 justify-center text-xs text-zinc-300 border-t border-white/10 mt-1">
+            <p>Already have an account?</p>
+            <a href="#" className="text-black font-medium hover:underline">Log in</a>
           </div>
         </form>
       </div>

@@ -51,7 +51,11 @@ export default function Navbar({ activeCategory, onSelectCategory }: NavbarProps
 
           {/* Right Side: Lucide Icons (User, Cart, Globe) */}
           <div className="flex items-center gap-5 shrink-0 text-white">
-            <button aria-label="User Profile" className="hover:text-[#D2CFC6] transition-colors cursor-pointer">
+            <button 
+              aria-label="User Profile" 
+              onClick={() => window.location.href = "/profile"}
+              className="hover:text-[#D2CFC6] transition-colors cursor-pointer"
+            >
               <User className="w-5 h-5" />
             </button>
             <button 

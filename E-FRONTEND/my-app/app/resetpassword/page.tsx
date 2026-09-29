@@ -1,5 +1,6 @@
-export const dynamic = 'force-dynamic';
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import { useState, useRef, useEffect } from 'react';
 import { userAPI } from '@/src/lib/api';
@@ -173,8 +174,8 @@ export default function Home() {
             ))}
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full py-2 mt-2 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50"
           >
@@ -182,8 +183,8 @@ export default function Home() {
           </button>
 
           <div className="flex items-center justify-between pt-2 text-xs text-zinc-700">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleResend}
               disabled={resending}
               className="text-[#5A3A33] font-medium hover:underline disabled:opacity-50"

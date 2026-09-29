@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { userAPI } from '@/src/lib/api';
 import { useRouter } from 'next/navigation';
@@ -108,7 +110,7 @@ export default function Home() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-2 mt-2 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50"
+            className="w-full py-2 mt-2 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50 cursor-pointer"
           >
             {loading ? 'Sending instructions...' : 'Reset password'}
           </button>

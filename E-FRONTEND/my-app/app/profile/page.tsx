@@ -77,6 +77,12 @@ function toOrders(body: any): Order[] {
             };
         });
         const rawStatus = String(o.status ?? "processing");
+        const paymentMethod =
+            o.paymentMethod ??
+            o.paymentType ??
+            o.payment_method ??
+            o.payment?.method ??
+            o.paymentDetails?.method;
         return {
             id: String(o._id ?? o.id),
             date: o.createdAt
@@ -86,7 +92,9 @@ function toOrders(body: any): Order[] {
             total: Number(o.totalAmount ?? o.total ?? o.totalPrice ?? items.reduce((s, i) => s + i.price * i.quantity, 0)),
             itemsCount: items.reduce((s, i) => s + i.quantity, 0),
             deliveryAddress: o.shippingAddress ?? o.deliveryAddress ?? "",
-            paymentMethod: o.paymentMethod ?? "Not specified",
+            paymentMethod: typeof paymentMethod === "string" && paymentMethod.trim()
+                ? paymentMethod
+                : "Not specified",
             items,
         } as Order;
     });

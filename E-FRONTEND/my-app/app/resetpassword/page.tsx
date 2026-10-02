@@ -73,7 +73,7 @@ function OtpVerificationContent() {
       }
 
       setTimeout(() => {
-        router.push(`/set-new-password?email=${encodeURIComponent(email)}&otp=${fullOtp}`);
+        router.push(`/setnewpassword?email=${encodeURIComponent(email)}&otp=${fullOtp}`);
       }, 1000);
     } catch (error: any) {
       setErrorMessage(

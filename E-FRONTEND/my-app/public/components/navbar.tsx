@@ -1,6 +1,7 @@
 "use client";
 
 import { User, ShoppingCart, Globe, Search } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 
 interface NavbarProps {
   activeCategory: string;
@@ -8,6 +9,9 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const showCategories = pathname === "/dashboard";
   const categories = [
     "All Categories",
     "Hair Extensions",
@@ -51,21 +55,25 @@ export default function Navbar({ activeCategory, onSelectCategory }: NavbarProps
 
           {/* Right Side: Lucide Icons (User, Cart, Globe) */}
           <div className="flex items-center gap-5 shrink-0 text-white">
-            <button 
-              aria-label="User Profile" 
+            <button
+              aria-label="User Profile"
               onClick={() => window.location.href = "/profile"}
               className="hover:text-[#D2CFC6] transition-colors cursor-pointer"
             >
               <User className="w-5 h-5" />
             </button>
-            <button 
-              aria-label="Shopping Cart" 
+            <button
+              aria-label="Shopping Cart"
               onClick={() => window.location.href = "/cart"}
               className="hover:text-[#D2CFC6] transition-colors cursor-pointer"
             >
               <ShoppingCart className="w-5 h-5" />
             </button>
-            <button aria-label="Change Language or Region" className="hover:text-[#D2CFC6] transition-colors cursor-pointer">
+            <button
+              aria-label="Go to dashboard"
+              onClick={() => router.push("/dashboard")}
+              className="hover:text-[#D2CFC6] transition-colors cursor-pointer"
+            >
               <Globe className="w-5 h-5" />
             </button>
           </div>
@@ -73,24 +81,25 @@ export default function Navbar({ activeCategory, onSelectCategory }: NavbarProps
         </div>
 
         {/* Bottom Row: Categories Spread Evenly */}
-        <div className="flex items-center justify-between text-xs sm:text-sm font-medium text-white/90 pt-1 border-t border-white/10 overflow-x-auto whitespace-nowrap gap-4 scrollbar-none">
-          {categories.map((category) => {
-            const isActive = activeCategory === category;
-            return (
-              <button
-                key={category}
-                onClick={() => onSelectCategory(category)}
-                className={`transition-colors pb-1 border-b-2 cursor-pointer ${
-                  isActive
-                    ? "text-white border-white font-semibold"
-                    : "text-white/80 border-transparent hover:text-white"
-                }`}
-              >
-                {category}
-              </button>
-            );
-          })}
-        </div>
+        {showCategories && (
+          <div className="flex items-center justify-between text-xs sm:text-sm font-medium text-white/90 pt-1 border-t border-white/10 overflow-x-auto whitespace-nowrap gap-4 scrollbar-none">
+            {categories.map((category) => {
+              const isActive = activeCategory === category;
+              return (
+                <button
+                  key={category}
+                  onClick={() => onSelectCategory(category)}
+                  className={`transition-colors pb-1 border-b-2 cursor-pointer ${isActive
+                      ? "text-white border-white font-semibold"
+                      : "text-white/80 border-transparent hover:text-white"
+                    }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
       </div>
     </nav>

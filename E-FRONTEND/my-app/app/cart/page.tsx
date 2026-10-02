@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Bottombar from "@/public/components/bottombar";
 import { cartAPI, orderAPI } from "@/src/lib/api";
+import PasswordInput from "@/src/components/password-input";
 import {
     User,
     ShoppingCart,
@@ -44,8 +47,8 @@ function normalizeCart(payload: any): CartItem[] {
             it.product && typeof it.product === "object"
                 ? it.product
                 : it.productId && typeof it.productId === "object"
-                ? it.productId
-                : it;
+                    ? it.productId
+                    : it;
 
         const seller =
             product?.seller?.fullName ??
@@ -73,16 +76,24 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 
 // ---------- Navbar ----------
 function CartNavbar({ count }: { count: number }) {
-    const [activeCategory, setActiveCategory] = useState("All Categories");
-    const categories = ["All Categories", "Hair Extensions", "Hair Tools", "Accessories", "Wigs", "Oils", "More"];
+    const router = useRouter();
 
     return (
         <nav className="w-full bg-[#5A3A33] border-b-2 border-[#5C3A31]/30 px-6 pt-4 pb-3 shadow-sm text-white">
             <div className="max-w-7xl mx-auto flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm font-bold tracking-tight text-white leading-tight shrink-0">
-                        Hair<br />Haven
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Image
+                            src="/Icon.png"
+                            alt="Hair Haven logo"
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 object-contain"
+                        />
+                        <span className="text-sm font-bold tracking-tight text-white leading-tight">
+                            Hair<br />Haven
+                        </span>
+                    </div>
 
                     <div className="flex-1 max-w-2xl relative">
                         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
@@ -107,26 +118,14 @@ function CartNavbar({ count }: { count: number }) {
                                 </span>
                             )}
                         </button>
-                        <button aria-label="Change Language or Region" className="hover:text-[#D2CFC6] transition-colors">
+                        <button
+                            aria-label="Go to dashboard"
+                            onClick={() => router.push("/dashboard")}
+                            className="hover:text-[#D2CFC6] transition-colors"
+                        >
                             <Globe className="w-5 h-5" />
                         </button>
                     </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs sm:text-sm font-medium text-white/90 pt-1 border-t border-white/10 overflow-x-auto whitespace-nowrap gap-4 scrollbar-none">
-                    {categories.map((category) => (
-                        <button
-                            key={category}
-                            onClick={() => setActiveCategory(category)}
-                            className={`transition-colors pb-1 border-b-2 ${
-                                activeCategory === category
-                                    ? "text-white border-white font-semibold"
-                                    : "text-white/80 border-transparent hover:text-white"
-                            }`}
-                        >
-                            {category}
-                        </button>
-                    ))}
                 </div>
             </div>
         </nav>
@@ -285,7 +284,7 @@ export default function CartPage() {
             .join(", ");
 
         try {
-            await orderAPI.checkout({ shippingAddress });
+            await orderAPI.checkout({ shippingAddress, paymentMethod });
             setOrderTotal(total); // snapshot before the cart empties
             setCartItems([]);
             setViewState("success");
@@ -364,7 +363,7 @@ export default function CartPage() {
                                 <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-xs">
                                     {unauthorized && (
                                         <button
-                                            onClick={() => (window.location.href = "/signin")}
+                                            onClick={() => (window.location.href = "/")}
                                             className="w-full bg-[#E5D2C5] hover:bg-[#d8c0b0] text-[#5A3A33] font-bold py-2.5 px-6 rounded-xl transition-colors shadow-xs text-sm"
                                         >
                                             Sign in
@@ -424,9 +423,8 @@ export default function CartPage() {
                                     {cartItems.map((item) => (
                                         <div
                                             key={item.id}
-                                            className={`bg-[#F4E3D7] border-2 border-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs transition-opacity ${
-                                                busyItemId === item.id ? "opacity-60" : ""
-                                            }`}
+                                            className={`bg-[#F4E3D7] border-2 border-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs transition-opacity ${busyItemId === item.id ? "opacity-60" : ""
+                                                }`}
                                         >
                                             <div className="flex items-center gap-4 w-full sm:w-auto">
                                                 <div className="w-14 h-14 bg-white rounded-xl shrink-0 border border-zinc-200 flex items-center justify-center text-[#5A3A33]/60">
@@ -625,11 +623,10 @@ export default function CartPage() {
                                         key={key}
                                         type="button"
                                         onClick={() => setPaymentMethod(key)}
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                                            paymentMethod === key
-                                                ? "border-[#5A3A33] bg-[#F4E3D7] text-[#5A3A33] shadow-xs"
-                                                : "border-[#D2CFC6] bg-transparent text-zinc-600 hover:border-zinc-400"
-                                        }`}
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${paymentMethod === key
+                                            ? "border-[#5A3A33] bg-[#F4E3D7] text-[#5A3A33] shadow-xs"
+                                            : "border-[#D2CFC6] bg-transparent text-zinc-600 hover:border-zinc-400"
+                                            }`}
                                     >
                                         <Icon className="w-6 h-6" />
                                         <span className="text-xs sm:text-sm font-semibold">{label}</span>
@@ -671,7 +668,7 @@ export default function CartPage() {
                                                     <ChevronDown className="w-3.5 h-3.5" />
                                                 </span>
                                             </div>
-                                            <input type="password" placeholder="CVV" required maxLength={4} className={inputClass} />
+                                            <PasswordInput placeholder="CVV" toggleLabel="CVV" required maxLength={4} className={inputClass} />
                                         </div>
                                     </>
                                 )}

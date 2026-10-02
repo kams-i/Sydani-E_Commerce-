@@ -36,7 +36,7 @@ export default function Home() {
       }
 
       setTimeout(() => {
-        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+        router.push(`/resetpassword?email=${encodeURIComponent(email)}`);
       }, 1500);
     } catch (error: any) {
       setErrorMessage(
@@ -107,8 +107,8 @@ export default function Home() {
             required
           />
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full py-2 mt-2 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50 cursor-pointer"
           >

@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { userAPI } from '@/src/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import PasswordInput from '@/src/components/password-input';
 
 function SetNewPasswordContent() {
   const router = useRouter();
@@ -26,7 +27,7 @@ function SetNewPasswordContent() {
   useEffect(() => {
     const emailParam = searchParams.get('email') || (typeof window !== 'undefined' ? localStorage.getItem('resetEmail') || '' : '');
     const otpParam = searchParams.get('otp') || (typeof window !== 'undefined' ? localStorage.getItem('resetOtp') || '' : '');
-    
+
     setFormData((prev) => ({
       ...prev,
       email: emailParam,
@@ -110,8 +111,7 @@ function SetNewPasswordContent() {
       {/* Form Inputs & Actions */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <p className="text-xs font-medium text-zinc-800">New Password</p>
-        <input
-          type="password"
+        <PasswordInput
           name="newPassword"
           value={formData.newPassword}
           onChange={handleChange}
@@ -121,8 +121,7 @@ function SetNewPasswordContent() {
         />
 
         <p className="text-xs font-medium text-zinc-800">Confirm Password</p>
-        <input
-          type="password"
+        <PasswordInput
           name="confirmPassword"
           value={formData.confirmPassword}
           onChange={handleChange}
@@ -131,8 +130,8 @@ function SetNewPasswordContent() {
           required
         />
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading}
           className="w-full py-2 mt-2 text-sm font-medium text-white bg-[#5A3A33] rounded-lg hover:bg-[#744b41] transition-colors disabled:opacity-50 cursor-pointer"
         >

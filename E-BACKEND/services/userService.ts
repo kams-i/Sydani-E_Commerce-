@@ -254,10 +254,6 @@ export const verifyOtpService = async (email: string, otp: string, res: Response
             return errorResponse(res, codes.BAD_REQUEST, 'OTP code has expired.');
         }
 
-        user.otpCode = null;
-        user.otpExpiresAt = null;
-        await user.save();
-
         const accessToken = jwt.sign(
             { id: user.id, role: user.role },
             process.env.JWT_SECRET || 'my_access_secret',

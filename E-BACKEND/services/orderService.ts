@@ -5,6 +5,7 @@ import type { Response } from 'express';
 
 export interface CheckoutPayload {
     shippingAddress: string;
+    paymentMethod?: 'card' | 'wallet' | 'transfer';
     [key: string]: any;
 }
 
@@ -89,13 +90,20 @@ export const checkoutService = async (
     payload: CheckoutPayload,
     res?: Response
 ) => {
-    const { shippingAddress } = payload;
+    const { shippingAddress, paymentMethod } = payload;
 
     if (!shippingAddress || typeof shippingAddress !== 'string' || shippingAddress.trim() === '') {
         if (res) {
             return errorResponse(res, codes.BAD_REQUEST, 'A valid shipping address is required.');
         }
         throw new Error('Invalid shipping address');
+    }
+
+    if (paymentMethod !== undefined && !['card', 'wallet', 'transfer'].includes(paymentMethod)) {
+        if (res) {
+            return errorResponse(res, codes.BAD_REQUEST, 'A valid payment method is required.');
+        }
+        throw new Error('Invalid payment method');
     }
 
     const t = await sequelize.transaction();
@@ -162,6 +170,7 @@ export const checkoutService = async (
                 userId,
                 totalAmount,
                 shippingAddress: shippingAddress.trim(),
+                paymentMethod: paymentMethod ?? null,
                 status: 'pending',
             },
             { transaction: t }

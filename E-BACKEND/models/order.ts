@@ -19,6 +19,7 @@ export interface OrderAttributes {
     totalAmount: number;
     status: OrderStatus;
     shippingAddress: string;
+    paymentMethod?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -31,6 +32,7 @@ export class Order extends Model<OrderAttributes, OrderCreationAttributes> imple
     public declare totalAmount: number;
     public declare status: OrderStatus;
     public declare shippingAddress: string;
+    public declare paymentMethod: string | null;
 
     public declare readonly createdAt: Date;
     public declare readonly updatedAt: Date;
@@ -70,6 +72,11 @@ Order.init(
             allowNull: false,
             field: 'shipping_address',
             validate: { notEmpty: true },
+        },
+        paymentMethod: {
+            type: DataTypes.STRING(32),
+            allowNull: true,
+            field: 'payment_method',
         },
     },
     {

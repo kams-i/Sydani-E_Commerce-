@@ -6,11 +6,15 @@ import { generateTokens } from '../utils/utils.ts';
 import User, { UserRole } from '../models/user.ts';
 // import { sequelize } from '../config/database.ts';
 import type { Response } from 'express';
+import dns from 'node:dns';
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+dns.setDefaultResultOrder('ipv4first');
 
 const getTransporter = () => {
     const user = process.env.EMAIL_USER?.trim();
@@ -20,19 +24,20 @@ const getTransporter = () => {
         throw new Error('EMAIL_USER or EMAIL_PASS environment variables are missing.');
     }
 
-    return nodemailer.createTransport({
+    const options: SMTPTransport.Options & { family?: 4 | 6 } = {
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // false for port 587 (STARTTLS)
-        auth: {
-            user,
-            pass,
-        },
-        family: 4, // Forces IPv4 to avoid network unreachable issues
+        secure: false,      // STARTTLS on 587
+        requireTLS: true,   // refuse to send unencrypted
+        family: 4,          // force IPv4
+        auth: { user, pass },
+        tls: { servername: 'smtp.gmail.com' },
         connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 10000,
-    } as nodemailer.TransportOptions);
+    };
+
+    return nodemailer.createTransport(options);
 };
 
 export interface SignUpPayload {

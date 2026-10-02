@@ -130,14 +130,14 @@ export const signInService = async ({ email, password }: { email: string; passwo
         }
 
         // Generate tokens using plain user data
-        const plainUserForToken = user.get({ plain: true }) as { id: string; email: string; role: string; [key: string]: any };
+        const plainUserForToken = user.get({ plain: true }) as { id: string; email: string; role: string;[key: string]: any };
         delete plainUserForToken.password;
         delete plainUserForToken.otpCode;
 
         const tokens = generateTokens(plainUserForToken);
 
         // Prepare clean user response object
-        const plainUser = user.get({ plain: true }) as { id: string; email: string; role: string; [key: string]: any };
+        const plainUser = user.get({ plain: true }) as { id: string; email: string; role: string;[key: string]: any };
         delete plainUser.password;
         delete plainUser.otpCode;
 
@@ -180,10 +180,6 @@ export const requestOtpService = async (emailInput: any, res: Response) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        console.log('----------------------------------------');
-        console.log(`[DEV OTP CODE for ${fullEmail}]: ${otp}`);
-        console.log('----------------------------------------');
-
         user.otpCode = otp;
         user.otpExpiresAt = expiresAt;
         await user.save();
@@ -205,8 +201,16 @@ export const requestOtpService = async (emailInput: any, res: Response) => {
         </div>
       `,
             });
-        } catch (smtpErr: any) {
-            console.warn('[SMTP Warning] Email delivery failed, but OTP is saved and printed above:', smtpErr.message);
+        } catch (smtpError: unknown) {
+            console.error('[SMTP Error] OTP email delivery failed:', smtpError);
+            user.otpCode = null;
+            user.otpExpiresAt = null;
+            await user.save();
+            return errorResponse(
+                res,
+                codes.INTERNAL_SERVER_ERROR,
+                'Could not send the OTP email. Please try again later.'
+            );
         }
 
         return successResponse(res, codes.OK, 'OTP generated successfully.');

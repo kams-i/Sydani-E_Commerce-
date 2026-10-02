@@ -6,38 +6,47 @@ import { generateTokens } from '../utils/utils.ts';
 import User, { UserRole } from '../models/user.ts';
 // import { sequelize } from '../config/database.ts';
 import type { Response } from 'express';
-import dns from 'node:dns';
-import nodemailer from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-dns.setDefaultResultOrder('ipv4first');
+/**
+ * Sends an email through Brevo's transactional API over HTTPS (port 443).
+ * Render's free tier blocks outbound SMTP ports (25, 465, 587), so nodemailer/SMTP can't be used there.
+ *
+ * Required env vars:
+ *   BREVO_API_KEY - API key from Brevo (SMTP & API -> API Keys), starts with "xkeysib-"
+ *   EMAIL_FROM    - a sender email address verified in Brevo (Senders, Domains & Dedicated IPs)
+ */
+const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
+    const apiKey = process.env.BREVO_API_KEY?.trim();
+    const from = process.env.EMAIL_FROM?.trim();
 
-const getTransporter = () => {
-    const user = process.env.EMAIL_USER?.trim();
-    const pass = process.env.EMAIL_PASS?.trim().replace(/\s+/g, '');
-
-    if (!user || !pass) {
-        throw new Error('EMAIL_USER or EMAIL_PASS environment variables are missing.');
+    if (!apiKey || !from) {
+        throw new Error('BREVO_API_KEY or EMAIL_FROM environment variables are missing.');
     }
 
-    const options: SMTPTransport.Options & { family?: 4 | 6 } = {
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,      // STARTTLS on 587
-        requireTLS: true,   // refuse to send unencrypted
-        family: 4,          // force IPv4
-        auth: { user, pass },
-        tls: { servername: 'smtp.gmail.com' },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
-    };
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+        },
+        body: JSON.stringify({
+            sender: { name: 'E-Commerce Support', email: from },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+        }),
+        signal: AbortSignal.timeout(10000),
+    });
 
-    return nodemailer.createTransport(options);
+    if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Brevo API error ${res.status}: ${body}`);
+    }
 };
 
 export interface SignUpPayload {
@@ -190,24 +199,20 @@ export const requestOtpService = async (emailInput: any, res: Response) => {
         await user.save();
 
         try {
-            const transporter = getTransporter();
-            const emailUser = process.env.EMAIL_USER || '';
-
-            await transporter.sendMail({
-                from: `"E-Commerce Support" <${emailUser.trim()}>`,
-                to: fullEmail,
-                subject: 'Your Password Reset / Verification OTP Code',
-                html: `
+            await sendEmail(
+                fullEmail,
+                'Your Password Reset / Verification OTP Code',
+                `
         <div style="font-family: sans-serif; padding: 20px;">
           <h2>Password Reset Code</h2>
           <p>Your one-time verification code is:</p>
           <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #2563eb;">${otp}</p>
           <p>This code will expire in 10 minutes.</p>
         </div>
-      `,
-            });
-        } catch (smtpError: unknown) {
-            console.error('[SMTP Error] OTP email delivery failed:', smtpError);
+      `
+            );
+        } catch (emailError: unknown) {
+            console.error('[Email Error] OTP email delivery failed:', emailError);
             user.otpCode = null;
             user.otpExpiresAt = null;
             await user.save();

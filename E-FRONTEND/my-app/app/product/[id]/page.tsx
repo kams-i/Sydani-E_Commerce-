@@ -44,8 +44,17 @@ interface Product {
     stock?: number;
 }
 
+type Notice = {
+    type: "success" | "error";
+    text: string;
+    showCartLink?: boolean; // only true after a successful add-to-cart
+};
+
 // Must match the event name the cart page listens for
 const CART_UPDATED_EVENT = "cart:updated";
+
+const SELLER_BLOCKED_MSG =
+    "Seller accounts can't add items to a cart. Please sign in with a buyer account to shop.";
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -59,7 +68,8 @@ export default function ProductDetailPage() {
     const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
     const [quantity, setQuantity] = useState<number>(1);
     const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
-    const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [notice, setNotice] = useState<Notice | null>(null);
+    const [isSellerAccount, setIsSellerAccount] = useState<boolean>(false); // set once the backend returns 403
 
     useEffect(() => {
         if (!id) return;
@@ -107,6 +117,12 @@ export default function ProductDetailPage() {
         const productId = product.id || product._id;
         if (!productId) return;
 
+        // Already known to be a seller: don't hit the backend again
+        if (isSellerAccount) {
+            setNotice({ type: "error", text: SELLER_BLOCKED_MSG });
+            return;
+        }
+
         const token = getAuthToken();
         if (!token) {
             console.warn(
@@ -135,18 +151,25 @@ export default function ProductDetailPage() {
             setNotice({
                 type: "success",
                 text: `Added ${quantity} ${quantity === 1 ? "item" : "items"} to your cart.`,
+                showCartLink: true,
             });
             setQuantity(1);
         } catch (err: any) {
             console.error("Error adding to cart:", err?.response?.status, err?.response?.data);
             const status = err?.response?.status;
-            setNotice({
-                type: "error",
-                text:
-                    status === 401
-                        ? "Your session has expired or the token was rejected. Please sign in again."
-                        : err?.response?.data?.message || "Failed to add item to cart. Please try again.",
-            });
+
+            let text: string;
+            if (status === 403) {
+                // Signed in, but not with a buyer account
+                setIsSellerAccount(true);
+                text = SELLER_BLOCKED_MSG;
+            } else if (status === 401) {
+                text = "Your session has expired or the token was rejected. Please sign in again.";
+            } else {
+                text = err?.response?.data?.message || "Failed to add item to cart. Please try again.";
+            }
+
+            setNotice({ type: "error", text });
         } finally {
             setAdding(false);
         }
@@ -309,7 +332,7 @@ export default function ProductDetailPage() {
 
                             {notice && (
                                 <div
-                                    role="status"
+                                    role={notice.type === "error" ? "alert" : "status"}
                                     className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
                                         notice.type === "success"
                                             ? "bg-emerald-50 border-emerald-200 text-emerald-800"
@@ -324,7 +347,7 @@ export default function ProductDetailPage() {
                                         )}
                                         {notice.text}
                                     </span>
-                                    {notice.type === "success" && notice.text.includes("cart") && !notice.text.includes("link") && (
+                                    {notice.showCartLink && (
                                         <button
                                             onClick={() => router.push("/cart")}
                                             className="font-semibold underline shrink-0"

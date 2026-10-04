@@ -23,6 +23,7 @@ import {
     CheckCircle2,
     Package,
     Loader2,
+    Lock,
 } from "lucide-react";
 
 // ---------- Types ----------
@@ -36,6 +37,9 @@ type CartItem = {
 };
 
 // ---------- Helpers ----------
+const SELLER_BLOCKED_MSG =
+    "Seller accounts can't add items to a cart or place orders. Please sign in with a buyer account to shop.";
+
 // The backend response shape can vary (populated product vs. flat item),
 // so we normalise defensively into one CartItem shape.
 function normalizeCart(payload: any): CartItem[] {
@@ -69,6 +73,8 @@ function normalizeCart(payload: any): CartItem[] {
 }
 
 function errMessage(err: any, fallback: string) {
+    // 403 = signed in, but not as a buyer
+    if (err?.response?.status === 403) return SELLER_BLOCKED_MSG;
     return err?.response?.data?.message ?? err?.message ?? fallback;
 }
 
@@ -177,7 +183,8 @@ export default function CartPage() {
     const [loading, setLoading] = useState(true);
     const [busyItemId, setBusyItemId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [unauthorized, setUnauthorized] = useState(false);
+    const [unauthorized, setUnauthorized] = useState(false); // 401: not signed in
+    const [forbidden, setForbidden] = useState(false);       // 403: signed in as a seller
 
     // Shipping: the backend only needs a single `shippingAddress` string,
     // so we collect the parts and join them at checkout.
@@ -198,11 +205,20 @@ export default function CartPage() {
             const res = await cartAPI.getCart();
             setCartItems(normalizeCart(res.data));
             setUnauthorized(false);
+            setForbidden(false);
             setError(null);
         } catch (err: any) {
-            if (err?.response?.status === 401) {
+            const status = err?.response?.status;
+            if (status === 401) {
                 setUnauthorized(true);
+                setForbidden(false);
                 setCartItems([]);
+            } else if (status === 403) {
+                // Signed in, but with a seller account: the placeholder handles the messaging
+                setForbidden(true);
+                setUnauthorized(false);
+                setCartItems([]);
+                setError(null);
             } else {
                 setError(errMessage(err, "Could not load your cart."));
             }
@@ -235,8 +251,13 @@ export default function CartPage() {
             await cartAPI.updateCartItem(item.id, { quantity: newQty });
             await fetchCart();
         } catch (err: any) {
-            setError(errMessage(err, "Could not update quantity."));
-            await fetchCart(); // roll back to server truth
+            if (err?.response?.status === 403) {
+                setForbidden(true);
+                setCartItems([]);
+            } else {
+                setError(errMessage(err, "Could not update quantity."));
+                await fetchCart(); // roll back to server truth
+            }
         } finally {
             setBusyItemId(null);
         }
@@ -250,7 +271,12 @@ export default function CartPage() {
             setCartItems((items) => items.filter((i) => i.id !== item.id));
             setError(null);
         } catch (err: any) {
-            setError(errMessage(err, "Could not remove item."));
+            if (err?.response?.status === 403) {
+                setForbidden(true);
+                setCartItems([]);
+            } else {
+                setError(errMessage(err, "Could not remove item."));
+            }
         } finally {
             setBusyItemId(null);
         }
@@ -290,6 +316,7 @@ export default function CartPage() {
             setViewState("success");
             fetchCart();
         } catch (err: any) {
+            // errMessage maps a 403 to the seller-account message
             setError(errMessage(err, "Payment could not be completed. Please try again."));
         } finally {
             setPlacingOrder(false);
@@ -299,7 +326,7 @@ export default function CartPage() {
     const setField = (key: keyof typeof shipping) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
         setShipping((s) => ({ ...s, [key]: e.target.value }));
 
-    const isEmpty = !loading && cartItems.length === 0;
+    const isEmpty = !loading && !forbidden && cartItems.length === 0;
 
     // Reusable order summary
     const SummaryRows = () => (
@@ -340,6 +367,40 @@ export default function CartPage() {
                     <div className="flex items-center justify-center gap-3 py-24 text-[#5A3A33]">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span className="text-sm font-medium">Loading your cart...</span>
+                    </div>
+                )}
+
+                {/* ================= SELLER ACCOUNT PLACEHOLDER ================= */}
+                {viewState === "cart" && !loading && forbidden && (
+                    <div className="flex items-center justify-center py-12 w-full">
+                        <div className="bg-[#FDF6F0] border-2 border-white rounded-3xl p-8 sm:p-12 shadow-xs flex flex-col items-center text-center gap-5 max-w-xl w-full">
+                            <div className="w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center border border-zinc-200 text-[#5A3A33]">
+                                <Lock className="w-9 h-9" />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <h1 className="text-xl sm:text-2xl font-bold font-serif text-[#5A3A33]">
+                                    Cart unavailable for seller accounts
+                                </h1>
+                                <p className="text-sm text-zinc-600 leading-relaxed">
+                                    You&apos;re signed in with a seller account. Please use a buyer account to
+                                    access the cart, add items, and place orders.
+                                </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs pt-1">
+                                <button
+                                    onClick={() => (window.location.href = "/")}
+                                    className="w-full bg-[#E5D2C5] hover:bg-[#d8c0b0] text-[#5A3A33] font-bold py-2.5 px-6 rounded-xl transition-colors shadow-xs text-sm"
+                                >
+                                    Switch account
+                                </button>
+                                <button
+                                    onClick={() => (window.location.href = "/dashboard")}
+                                    className="w-full bg-[#5A3A33] hover:bg-[#432A25] text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-xs text-sm"
+                                >
+                                    Back to dashboard
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -396,7 +457,7 @@ export default function CartPage() {
                 )}
 
                 {/* ================= CART WITH ITEMS ================= */}
-                {viewState === "cart" && !loading && cartItems.length > 0 && (
+                {viewState === "cart" && !loading && !forbidden && cartItems.length > 0 && (
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#FDF6F0] border-2 border-white px-6 py-4 rounded-3xl shadow-xs">
                             <h1 className="text-xl sm:text-2xl font-bold font-serif text-[#5A3A33]">

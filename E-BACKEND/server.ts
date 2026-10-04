@@ -45,7 +45,8 @@ const runServer = async () => {
         await sequelize.authenticate();
         console.log('Database connected successfully');
 
-        await sequelize.sync({ alter: true });
+        // Safe database synchronization: only creates missing tables, never alters or wipes existing data
+        await sequelize.sync();
         console.log('Models synchronized with database');
 
         const server = app.listen(Number(port), () => {

@@ -7,40 +7,45 @@ import {
     removeCartItem,
     clearCart
 } from '../controllers/cartController.ts';
-import { authenticate } from '../middleware/authMiddleware.ts';
+import { authenticate, authorize } from '../middleware/authMiddleware.ts';
 
 const router: Router = express.Router();
 
-// --- PROTECTED BUYER/USER CART ROUTES ---
-// All cart operations require the user to be authenticated
+// --- PROTECTED BUYER CART ROUTES ---
+// Only users who are logged in AND have the 'buyer' role can access these:
 
 router.get(
     '/',
     authenticate,
+    authorize('buyer'),
     getCart
 );
 
 router.post(
     '/items',
     authenticate,
+    authorize('buyer'),
     addToCart
 );
 
 router.put(
     '/items/:id',
     authenticate,
+    authorize('buyer'),
     updateCartItem
 );
 
 router.delete(
     '/items/:id',
     authenticate,
+    authorize('buyer'),
     removeCartItem
 );
 
 router.delete(
     '/clear',
     authenticate,
+    authorize('buyer'),
     clearCart
 );
 

@@ -113,7 +113,11 @@ function CartNavbar({ count }: { count: number }) {
                     </div>
 
                     <div className="flex items-center gap-5 shrink-0 text-white">
-                        <button aria-label="User Profile" className="hover:text-[#D2CFC6] transition-colors">
+                        <button
+                            aria-label="User Profile"
+                            onClick={() => router.push("/profile")}
+                            className="hover:text-[#D2CFC6] transition-colors cursor-pointer"
+                        >
                             <User className="w-5 h-5" />
                         </button>
                         <button aria-label="Shopping Cart" className="text-[#D2CFC6] relative transition-colors">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/public/components/navbar";
 import Bottombar from "@/public/components/bottombar";
@@ -21,9 +21,16 @@ interface Product {
     badge?: string;
 }
 
-export default function Dashboard() {
+interface DashboardProps {
+    searchParams: Promise<{ search?: string | string[] }>;
+}
+
+export default function Dashboard({ searchParams }: DashboardProps) {
+    const { search } = use(searchParams);
+    const initialSearchQuery = Array.isArray(search) ? search[0] || "" : search || "";
     const router = useRouter();
     const [activeCategory, setActiveCategory] = useState("All Categories");
+    const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -112,6 +119,24 @@ export default function Dashboard() {
 
     const showAll = activeCategory === "All Categories";
     const safeProducts = Array.isArray(products) ? products : [];
+    const searching = searchQuery.trim().length > 0;
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        const params = new URLSearchParams(window.location.search);
+        if (query) {
+            params.set("search", query);
+        } else {
+            params.delete("search");
+        }
+        const search = params.toString();
+        router.replace(search ? `/dashboard?${search}` : "/dashboard");
+    };
+
+    const handleCategorySelect = (category: string) => {
+        setActiveCategory(category);
+        if (searchQuery) handleSearch("");
+    };
 
     // Helper to normalize and match category names flexibly
     const filterByCategory = (categoryName: string) => {
@@ -122,12 +147,15 @@ export default function Dashboard() {
     };
 
     // Dynamic categorization based on backend records
-    const trendingDealsItems = showAll ? safeProducts.slice(0, 4) : filterByCategory(activeCategory);
+    const trendingDealsItems = searching
+        ? safeProducts.filter((product) =>
+            [product.title, product.name, product.description, product.category]
+                .some((value) => value?.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+        )
+        : showAll ? safeProducts.slice(0, 4) : filterByCategory(activeCategory);
     const wigsItems = filterByCategory("Wigs");
     const hairAccessoriesItems = filterByCategory("Accessories");
     const hairExtensionsItems = filterByCategory("Hair Extensions");
-    const oilsItems = filterByCategory("Oils");
-    const hairToolsItems = filterByCategory("Hair Tools");
 
     // Helper to get image URL safely
     const getProductImage = (item: Product) => {
@@ -153,14 +181,17 @@ export default function Dashboard() {
             {/* Top Navbar Component with Category State */}
             <Navbar
                 activeCategory={activeCategory}
-                onSelectCategory={setActiveCategory}
+                onSelectCategory={handleCategorySelect}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onSearch={handleSearch}
             />
 
             {/* Main Content Area */}
             <div className="flex-1 p-6 max-w-7xl w-full mx-auto flex flex-col gap-6">
 
                 {/* Promotional Hero Banner Section */}
-                {(showAll || activeCategory === "Hair Tools") && (
+                {(showAll || activeCategory === "Hair Tools") && !searching && (
                     <div className="w-full flex flex-col items-center gap-3">
                         <p className="text-[#5A3A33] font-serif text-sm sm:text-base tracking-wide font-medium">
                             Everything Hair. All in One Place
@@ -226,10 +257,10 @@ export default function Dashboard() {
                 {!loading && !error && (
                     <>
                         {/* Trending Deals / All Categories Section */}
-                        {(showAll || activeCategory === "Hair Extensions" || activeCategory === "More") && trendingDealsItems.length > 0 && (
+                        {(searching || showAll || activeCategory === "Hair Extensions" || activeCategory === "Hair Tools" || activeCategory === "Oils" || activeCategory === "More") && trendingDealsItems.length > 0 && (
                             <div className="flex flex-col gap-4 pt-2">
                                 <h2 className="text-xl sm:text-2xl font-bold text-[#5A3A33] font-serif">
-                                    {showAll ? "Trending Deals" : activeCategory}
+                                    {searching ? `Search results for "${searchQuery.trim()}"` : showAll ? "Trending Deals" : activeCategory}
                                 </h2>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                     {trendingDealsItems.map((item) => {
@@ -278,7 +309,7 @@ export default function Dashboard() {
                         )}
 
                         {/* Wigs Section */}
-                        {(showAll || activeCategory === "Wigs") && wigsItems.length > 0 && (
+                        {!searching && (showAll || activeCategory === "Wigs") && wigsItems.length > 0 && (
                             <div className="flex flex-col gap-4 pt-2">
                                 <h2 className="text-xl sm:text-2xl font-bold text-[#5A3A33] font-serif">
                                     Wigs
@@ -330,7 +361,7 @@ export default function Dashboard() {
                         )}
 
                         {/* Hair Accessories Section */}
-                        {(showAll || activeCategory === "Accessories") && hairAccessoriesItems.length > 0 && (
+                        {!searching && (showAll || activeCategory === "Accessories") && hairAccessoriesItems.length > 0 && (
                             <div className="flex flex-col gap-4 pt-2">
                                 <h2 className="text-xl sm:text-2xl font-bold text-[#5A3A33] font-serif">
                                     Hair Accessories
@@ -382,7 +413,18 @@ export default function Dashboard() {
                         )}
 
                         {/* Empty State when no products match current category filter */}
-                        {showAll && safeProducts.length === 0 && (
+                        {searching && trendingDealsItems.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                                <h3 className="text-xl font-bold text-[#5A3A33] font-serif">
+                                    No products found
+                                </h3>
+                                <p className="text-sm text-zinc-700">
+                                    No products match &quot;{searchQuery.trim()}&quot;. Try another search.
+                                </p>
+                            </div>
+                        )}
+
+                        {!searching && showAll && safeProducts.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                                 <h3 className="text-xl font-bold text-[#5A3A33] font-serif">
                                     No Products Found
@@ -393,7 +435,7 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        {!showAll && filterByCategory(activeCategory).length === 0 && (
+                        {!searching && !showAll && filterByCategory(activeCategory).length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                                 <h3 className="text-xl font-bold text-[#5A3A33] font-serif">
                                     {activeCategory}

@@ -1,5 +1,7 @@
 import { errorResponse } from '../utils/responses.ts';
 import codes from '../utils/statusCodes.ts';
+import axios from 'axios';
+import User from '../models/user.ts';
 import { Cart, CartItem, Product, Order, OrderItem, sequelize } from '../models/index.ts';
 import type { Response } from 'express';
 
@@ -110,7 +112,17 @@ export const checkoutService = async (
     let isCommitted = false;
 
     try {
-        // 1. Fetch user cart along with items and products inside the transaction (with type casting)
+        // 0. Fetch the user to get their email address for Paystack
+        const user = await User.findByPk(userId, { transaction: t });
+        if (!user || !user.email) {
+            await t.rollback();
+            if (res) {
+                return errorResponse(res, codes.NOT_FOUND, 'User account or email not found.');
+            }
+            throw new Error('User not found');
+        }
+
+        // 1. Fetch user cart along with items and products inside the transaction
         const cart = (await Cart.findOne({
             where: { userId },
             include: [
@@ -164,7 +176,7 @@ export const checkoutService = async (
             totalAmount += Number(product.price) * item.quantity;
         }
 
-        // 3. Create the Order record
+        // 3. Create the Order record (initially 'pending')
         const order = await Order.create(
             {
                 userId,
@@ -203,12 +215,57 @@ export const checkoutService = async (
             transaction: t,
         });
 
+        // 6. Call Paystack Initialization API
+        // Paystack expects amount in Kobo (multiply Naira amount by 100)
+        const amountInKobo = Math.round(totalAmount * 100);
+
+        const paystackResponse = await axios.post(
+            'https://api.paystack.co/transaction/initialize',
+            {
+                email: user.email,
+                amount: amountInKobo,
+                metadata: {
+                    orderId: order.id,
+                    userId: userId,
+                },
+                // Optional: callback_url: 'https://sydani-e-commerce.vercel.app/checkout/complete'
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        const paystackData = paystackResponse.data.data;
+
+        // 7. Save the Paystack reference to your order so you can verify it later
+        await order.update(
+            { paymentReference: paystackData.reference },
+            { transaction: t }
+        );
+
         // Commit transaction
         await t.commit();
         isCommitted = true;
 
-        // Fetch and return the newly created order with full details
-        return await getOneOrderService(userId, order.id, res);
+        // Return order info along with Paystack checkout/authorization URL for the frontend
+        if (res) {
+            return res.status(200).json({
+                success: true,
+                message: 'Checkout initialized successfully',
+                data: {
+                    orderId: order.id,
+                    totalAmount,
+                    authorizationUrl: paystackData.authorization_url,
+                    accessCode: paystackData.access_code,
+                    reference: paystackData.reference,
+                },
+            });
+        }
+
+        return order;
     } catch (error: any) {
         if (!isCommitted) {
             try {
@@ -220,9 +277,13 @@ export const checkoutService = async (
         if (res && res.headersSent) {
             return;
         }
-        console.error('Checkout error:', error);
+        console.error('Checkout error:', error?.response?.data || error);
         if (res) {
-            return errorResponse(res, codes.INTERNAL_SERVER_ERROR, 'Internal server error during checkout.');
+            return errorResponse(
+                res,
+                codes.INTERNAL_SERVER_ERROR,
+                error?.response?.data?.message || 'Internal server error during checkout.'
+            );
         }
         throw error;
     }

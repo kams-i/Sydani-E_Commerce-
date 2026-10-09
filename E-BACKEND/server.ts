@@ -8,8 +8,9 @@ import logger from './middleware/logger.ts';
 import notFound from './middleware/notFound.ts';
 import userRoute from './routes/userRoute.ts';
 import productRoute from './routes/productRoute.ts';
-import cartRoute from './routes/cartRoute.ts'; 
+import cartRoute from './routes/cartRoute.ts';
 import orderRoute from './routes/orderRoute.ts';
+import paymentRoute from './routes/paymentRoute.ts';
 
 dotenv.config();
 const app = express();
@@ -19,8 +20,8 @@ app.use(express.json());
 app.use(logger);
 app.use(cors({
     origin: [
-        'http://localhost:3000', 
-        'https://localhost:3000', 
+        'http://localhost:3000',
+        'https://localhost:3000',
         'https://sydani-e-commerce.vercel.app'
     ],
     credentials: true
@@ -35,6 +36,7 @@ app.use('/api/v6/user', userRoute);
 app.use('/api/v6/product', productRoute);
 app.use('/api/v6/cart', cartRoute);
 app.use('/api/v6/order', orderRoute);
+app.use('/api/v6/payment', paymentRoute);
 
 // 2. Fallback & Error Handlers MUST go LAST (after all valid routes)
 app.use(notFound);
@@ -45,9 +47,9 @@ const runServer = async () => {
         await sequelize.authenticate();
         console.log('Database connected successfully');
 
-        // Safe database synchronization: only creates missing tables, never alters or wipes existing data
-        await sequelize.sync();
-        console.log('Models synchronized with database');
+        // Automatically alter existing tables to match model updates (like adding payment_reference)
+        await sequelize.sync({ alter: true });
+        console.log('Models synchronized with database (with alter)');
 
         const server = app.listen(Number(port), () => {
             console.log(`This project is running at ${port}`);

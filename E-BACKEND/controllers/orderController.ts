@@ -19,14 +19,14 @@ export const checkout = async (
             return errorResponse(res, codes.UNAUTHORIZED, 'Not authorized.');
         }
 
-        // req.body contains the shippingAddress defined by the user
-        const order = await checkoutService(String(userId), req.body, res);
+        // req.body contains the shippingAddress and paymentMethod defined by the user
+        const result = await checkoutService(String(userId), req.body, res);
 
         if (res.headersSent) {
             return;
         }
 
-        return successResponse(res, codes.CREATED, 'Checkout successful. Order placed!', order);
+        return successResponse(res, codes.CREATED, 'Checkout initialized successfully. Redirect to complete payment.', result);
     } catch (error: unknown) {
         if (!res.headersSent) {
             next(error);

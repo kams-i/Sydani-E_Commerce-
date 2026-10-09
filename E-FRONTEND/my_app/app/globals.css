@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --animate-banner: banner 25s linear infinite;
+
+  @keyframes banner{
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+
+  --animate-auto-slide: autoSlide 8s infinite;
+
+  /* 2. Keyframe timeline balanced precisely for a 2-image horizontal swap */
+  @keyframes autoSlide {
+    0%, 45% { transform: translateX(0%) }       /* Image 1 stays active */
+    50%, 95% { transform: translateX(-100%);}   /* Smooth slide to Image 2, stays active */
+    100% { transform: translateX(0%); }          /* Loops perfectly back to Image 1 */
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+

@@ -20,6 +20,7 @@ export interface OrderAttributes {
     status: OrderStatus;
     shippingAddress: string;
     paymentMethod?: string | null;
+    paymentReference?: string | null; // <-- Added here
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -33,6 +34,7 @@ export class Order extends Model<OrderAttributes, OrderCreationAttributes> imple
     public declare status: OrderStatus;
     public declare shippingAddress: string;
     public declare paymentMethod: string | null;
+    public declare paymentReference: string | null; // <-- Added here
 
     public declare readonly createdAt: Date;
     public declare readonly updatedAt: Date;
@@ -77,6 +79,12 @@ Order.init(
             type: DataTypes.STRING(32),
             allowNull: true,
             field: 'payment_method',
+        },
+        paymentReference: { // <-- Added field configuration
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            field: 'payment_reference',
+            unique: true,
         },
     },
     {
